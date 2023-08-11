@@ -1,0 +1,150 @@
+#!/bin/bash
+#Programmed by ItzSelenux under Gplv3
+
+id=""
+isolinux=""
+
+#Initialize ID for supported distros
+distrolist=("artix" "linuxmint" "tinycore" "loc-os")
+
+
+
+help() {
+printf "iso2chroot is a utility to convert Linux ISO Files into chroot environments
+
+usage: iso2chroot [-f /path/to/file -id dist]
+
+-f  specify file
+-id set distribution id
+-l  list supported distributions
+-h  see this help
+"
+exit
+}
+
+list() {
+for distro in "${distrolist[@]}"; do
+    printf "$distro "
+done
+printf "\n"
+}
+
+generic_env() {
+sysimg=$(find mountpoint -name "*.squashfs")
+unsquashfs -ig -d $dirtarget $sysimg
+fusermount -u mountpoint
+printf "done \n"
+exit
+}
+
+arch_env() {
+sysimg=$(find mountpoint -name "rootfs.img")
+unsquashfs -ig -d $dirtarget $sysimg
+fusermount -u mountpoint
+printf "done \n"
+}
+
+tc_env() {
+sysimg=$(find mountpoint -name "core.gz")
+mv $sysimg $dirtarget/tc.gz
+cd $dirtarget
+gzip -d tc.gz
+cpio -idv < tc
+rm -f tc
+cd ..
+fusermount -u mountpoint
+printf "done \n"
+}
+
+createenv() {
+	mkdir mountpoint
+	dirtarget="${id}_environment/"
+	mkdir "$dirtarget"
+	fuseiso $isolinux mountpoint
+}
+
+while [[ $# -gt 0 ]]; do
+	case $1 in
+		-id)
+			id="$2"
+			shift 2
+			;;
+		 -f)
+			isolinux="$2"
+			shift 2
+			;;
+		-l)
+			list
+			exit 0
+			;;
+		-h)
+			help
+			exit 0
+			;;
+		*)
+			isolinux="$1"
+			shift
+			;;
+	esac
+done
+
+
+#Stage 0: Check ID
+
+distro_exist=false
+for supported in "${distrolist[@]}"; do
+	if [ "$id" = "$supported" ]; then
+		distro_exist=true
+		break
+	fi
+done
+
+if [ "$distro_exist" = true ]; then
+	printf "$id is supported, using specific way for $id \n"
+elif [$id = ""]; then
+	printf "id not declared, using generic way (please use -h for help) \n"
+	id="generic"
+else
+	printf "$id is not supported, sorry, trying to use generic way \n"
+	id="generic"
+fi
+
+# Stage 1: Check if the file exist and is an ISO File
+
+
+#isolinux="$1"
+if [ -e "$isolinux" ]; then
+	if [[ "$isolinux" == *.iso ]]; then
+		printf "$isolinux is an ISO file in the filesystem\n"
+	else
+		printf "\033[31mERROR: $isolinux is not an ISO file in the filesystem.\033[0m\n"
+		exit
+	fi
+else
+	printf "\033[31mERROR: $isolinux does not exist in the filesystem.\033[0m\n"
+	exit
+fi
+
+# Stage 2: Confirm and extract
+printf "Are you sure you want to use $isolinux? (y/n)"
+read choice
+
+if [ "$choice" == "y" ] || [ "$choice" == "Y" ]; then
+	printf "OK, Extracting $isolinux, this may take a while... \n"
+	createenv
+	
+	if [ $id = generic ] || [ $id = linuxmint ] || [ $id = loc-os ]; then
+		generic_env
+	fi
+
+	if [ $id = artixlinux ]; then
+		arch_env
+	fi
+	
+	if [ $id = tinycore ]; then
+		tc_env
+	fi
+else
+	printf "Exiting... \n"
+	exit
+fi
