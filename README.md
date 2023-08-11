@@ -7,6 +7,7 @@
     -f  specify file
     -id set distribution id
     -l  list supported distributions
+    -t  set target directory
     -h  see this help
 
 ## Dependencies
@@ -39,4 +40,11 @@ in a future maybe some weird system needs a specific tool (E,G TinyCore requires
 | Loc-OS | filesystem.squashfs| OK, works with generic way | None |
 | TinyCore | core.gz | OK, require a specific way | gzip, cpio |
 
+## Problematic Distros
+ - These distros doesn't work because weird structure problems
+
+| Distro | Core File | Status |
+|----------|----------|----------| ----------|
+| Debian netinstall | ??? | No core file founded |
+| Void Linux | squashfs.img | a fs img file is inside the squashfs.img, so, is very slow to create the chroot |
 

@@ -5,7 +5,7 @@ id=""
 isolinux=""
 
 #Initialize ID for supported distros
-distrolist=("artix" "linuxmint" "tinycore" "loc-os")
+distrolist=("arch" "linuxmint" "tinycore" "loc-os")
 
 
 
@@ -17,6 +17,7 @@ usage: iso2chroot [-f /path/to/file -id dist]
 -f  specify file
 -id set distribution id
 -l  list supported distributions
+-t  set target directory
 -h  see this help
 "
 exit
@@ -33,6 +34,7 @@ generic_env() {
 sysimg=$(find mountpoint -name "*.squashfs")
 unsquashfs -ig -d $dirtarget $sysimg
 fusermount -u mountpoint
+rm -r mountpoint
 printf "done \n"
 exit
 }
@@ -41,6 +43,7 @@ arch_env() {
 sysimg=$(find mountpoint -name "rootfs.img")
 unsquashfs -ig -d $dirtarget $sysimg
 fusermount -u mountpoint
+rm -r mountpoint
 printf "done \n"
 }
 
@@ -49,16 +52,21 @@ sysimg=$(find mountpoint -name "core.gz")
 mv $sysimg $dirtarget/tc.gz
 cd $dirtarget
 gzip -d tc.gz
-cpio -idv < tc
+cpio -id < tc
 rm -f tc
 cd ..
 fusermount -u mountpoint
+rm -r mountpoint
 printf "done \n"
 }
 
 createenv() {
 	mkdir mountpoint
-	dirtarget="${id}_environment/"
+if [ "${envtarget}" == "" ]; then
+    dirtarget="${id}_environment/"
+else
+    dirtarget="${envtarget}"
+fi
 	mkdir "$dirtarget"
 	fuseiso $isolinux mountpoint
 }
@@ -71,6 +79,10 @@ while [[ $# -gt 0 ]]; do
 			;;
 		 -f)
 			isolinux="$2"
+			shift 2
+			;;
+		 -t)
+			envtarget="$2"
 			shift 2
 			;;
 		-l)
@@ -137,7 +149,7 @@ if [ "$choice" == "y" ] || [ "$choice" == "Y" ]; then
 		generic_env
 	fi
 
-	if [ $id = artixlinux ]; then
+	if [ $id = arch ]; then
 		arch_env
 	fi
 	
