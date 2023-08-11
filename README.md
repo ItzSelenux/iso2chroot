@@ -43,8 +43,9 @@ in a future maybe some weird system needs a specific tool (E,G TinyCore requires
 ## Problematic Distros
  - These distros doesn't work because weird structure problems
 
+
 | Distro | Core File | Status |
-|----------|----------|----------| ----------|
+|----------|----------|----------|
 | Debian netinstall | ??? | No core file founded |
 | Void Linux | squashfs.img | a fs img file is inside the squashfs.img, so, is very slow to create the chroot |
 
